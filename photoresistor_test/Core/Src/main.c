@@ -49,6 +49,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 uint32_t adc_buf[ADC_BUF_LEN];
+volatile uint8_t convCompleted = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,7 +59,8 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
-void DMATransferComplete(DMA_HandleTypeDef *hdma);
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -73,7 +75,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	  char msg[20];
-	  uint16_t rawValues[1];
+	  uint16_t rawValues[2];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -108,24 +110,33 @@ int main(void)
   hdma_usart2_tx.Init.Priority = DMA_PRIORITY_LOW;
   HAL_DMA_Init(&hdma_usart2_tx);
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t*) msg, strlen(msg));
+//  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)rawValues, 1);
+
+//  sprintf(msg, "rawValue: %hu\r\n", rawValues[0]);
+//  HAL_UART_Transmit_DMA(&huart2, (uint8_t*) msg, strlen(msg));
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)rawValues, 1);
+	  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)rawValues, 2);
+//	  while(!convCompleted);
 	  HAL_ADC_Stop_DMA(&hadc1);
-	  sprintf(msg, "rawValue: %hu\r\n", rawValues[0]);
-	  HAL_Delay(1000);
+	  for (int i = 0 ; i < hadc1.Init.NbrOfConversion; i++)
+	  {
+		  sprintf(msg, "rawValue %d: %hu\r\n",i, rawValues[i]);
+		  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+		  HAL_Delay(100);
+	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-   /* USER CODE END 3 */
-  	  }
+  }
+  /* USER CODE END 3 */
 }
+
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -196,13 +207,13 @@ static void MX_ADC1_Init(void)
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ScanConvMode = ENABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 2;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -215,6 +226,15 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -312,6 +332,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
+	convCompleted = 1;
+
+}
 /* USER CODE END 4 */
 
 /**
