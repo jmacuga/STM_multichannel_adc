@@ -74,7 +74,7 @@ static void MX_ADC1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	char msg[40];
+	char msg[100];
 	uint16_t rawValues[2];
   /* USER CODE END 1 */
 
@@ -107,7 +107,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  sprintf(msg, "rawValue 0: %hu, rawValue 1: %hu\r\n", rawValues[0], rawValues[1]);
+	  float voltages[2];
+	  for (int i = 0; i < 2; i++)
+	  {
+		  voltages[i] = rawValues[i] * 3.4/ 4095;
+
+	  }
+	  sprintf(msg, "rawValue 0: %.4f, rawValue 1: %.4f\r\n", voltages[0], voltages[1]);
 	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
     /* USER CODE END WHILE */
 
