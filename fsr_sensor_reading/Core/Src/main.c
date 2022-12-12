@@ -108,7 +108,7 @@ int main(void)
 	  float voltages[2];
 	  for (int i = 0; i < 2; i++)
 	  {
-		  voltages[i] = rawValues[i] * 3.4/ 4095;
+		  voltages[i] = rawValues[i] * 3.3/ 4095;
 
 	  }
 	  sprintf(msg, "%.4f,%.4f\r\n", voltages[0], voltages[1]);
