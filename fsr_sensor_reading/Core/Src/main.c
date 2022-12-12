@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,7 +71,8 @@ static void MX_ADC1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	char msg[100];
+	uint16_t rawValues[2];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -95,6 +97,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)rawValues, 2);
 
   /* USER CODE END 2 */
 
@@ -102,6 +105,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  float voltages[2];
+	  for (int i = 0; i < 2; i++)
+	  {
+		  voltages[i] = rawValues[i] * 3.4/ 4095;
+
+	  }
+	  sprintf(msg, "%.4f,%.4f\r\n", voltages[0], voltages[1]);
+	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -300,7 +311,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+}
 /* USER CODE END 4 */
 
 /**
