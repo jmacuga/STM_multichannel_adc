@@ -47,6 +47,7 @@ DMA_HandleTypeDef hdma_adc1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+uint16_t NUMBER_OF_SENSORS = 2;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,7 +76,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	char msg[100];
-	uint16_t rawValues[2];
+	uint16_t rawValues[NUMBER_OF_SENSORS];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -99,7 +100,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)rawValues, 2);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)rawValues, NUMBER_OF_SENSORS);
 
   /* USER CODE END 2 */
 
@@ -107,13 +108,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  float voltages[2];
-	  for (int i = 0; i < 2; i++)
+	  float voltages[NUMBER_OF_SENSORS];
+	  for (int sensor_id = 0; sensor_id < NUMBER_OF_SENSORS; sensor_id++)
 	  {
-		  voltages[i] = rawValues[i] * 3.3/ 4095;
+		  voltages[sensor_id] = rawValues[sensor_id] * 3.3/ 4095;
 
 	  }
-	  sprintf(msg, "rawValue 0: %.4f, rawValue 1: %.4f\r\n", voltages[0], voltages[1]);
+
+	  //transer data to msg buffer and send it via uart
+	  int bytes_num = 0; //number of bytes that are written in the buffer
+	  for (int sensor_id = 0; sensor_id < NUMBER_OF_SENSORS; sensor_id++)
+	  {
+		  bytes_num += sprintf(msg+bytes_num, "%.4f, ", voltages[sensor_id]);
+
+	  }
+	  //add new line to the buffer
+	  bytes_num += sprintf(msg+bytes_num, "\n");
 	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
     /* USER CODE END WHILE */
 
@@ -285,6 +295,8 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -308,6 +320,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
